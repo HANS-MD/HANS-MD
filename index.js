@@ -249,55 +249,64 @@ function mybotpic() {
             };
 
 
-            /************************ anti-delete-message */
+//HANS MD STARTED NEW CODE ADDITIONAL
+// Listen for incoming messages when CHAT_BOT is enabled
+if (conf.CHAT_BOT === 'yes') {
+  console.log('CHAT_BOT is enabled. Listening for messages...');
+  
+  zk.ev.on('messages.upsert', async (event) => {
+    try {
+      const { messages } = event;
+      
+      // Load the replies from the JSON file
+      const replyMessages = loadReplyMessages();
 
-            if(ms.message.protocolMessage && ms.message.protocolMessage.type === 0 && (conf.ADM).toLocaleLowerCase() === 'yes' ) {
+      // Iterate over incoming messages
+      for (const message of messages) {
+        if (!message.key || !message.key.remoteJid) {
+          continue; // Skip if there's no remoteJid
+        }
 
-                if(ms.key.fromMe || ms.message.protocolMessage.key.fromMe) { console.log('Message supprimer me concernant') ; return }
-        
-                                console.log(`Message supprimer`)
-                                let key =  ms.message.protocolMessage.key ;
-                                
-        
-                               try {
-        
-                                  let st = './store.json' ;
-        
-                                const data = fs.readFileSync(st, 'utf8');
-        
-                                const jsonData = JSON.parse(data);
-        
-                                    let message = jsonData.messages[key.remoteJid] ;
-                                
-                                    let msg ;
-        
-                                    for (let i = 0 ; i < message.length ; i++) {
-        
-                                        if (message[i].key.id === key.id) {
-                                            
-                                            msg = message[i] ;
-        
-                                            break 
-                                        }
-        
-                                    } 
-        
-                                  //  console.log(msg)
-        
-                                    if(msg === null || !msg ||msg === 'undefined') {console.log('Message non trouver') ; return } 
-        
-                                await zk.sendMessage(idBot,{ image : { url : './media/deleted-message.jpg'},caption : `        😈Anti-delete-message😈\n Message from @${msg.key.participant.split('@')[0]}​` , mentions : [msg.key.participant]},)
-                                .then( () => {
-                                    zk.sendMessage(idBot,{forward : msg},{quoted : msg}) ;
-                                })
-                               
-                              
-        
-                               } catch (e) {
-                                    console.log(e)
-                               }
-                            }
-        
+        const messageText = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
+        const replyMessage = getReplyMessage(messageText, replyMessages);
+
+        // Ensure we don't send replies too frequently
+        const currentTime = Date.now();
+        if (currentTime - lastReplyTime < MIN_REPLY_DELAY) {
+          console.log('Rate limit applied. Skipping reply.');
+          continue; // Skip this reply if the delay hasn't passed
+        }
+
+        if (replyMessage) {
+          try {
+            // Send the corresponding text reply
+            await zk.sendMessage(message.key.remoteJid, {
+              text: replyMessage
+            });
+            console.log(`Text reply sent: ${replyMessage}`);
+
+            // Update the last reply time
+            lastReplyTime = currentTime;
+          } catch (error) {
+            console.error(`Error sending text reply: ${error.message}`);
+          }
+        } else {
+          console.log('No matching keyword detected. Skipping message.');
+        }
+
+        // Wait for a brief moment before processing the next message (3 seconds delay)
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+    } catch (error) {
+      console.error('Error in message processing:', error.message);
+    }
+  });
+}
+
+
+
+//HANS MD END CODE ADDITIONAL
+           
             /** ****** gestion auto-status  */
             if (ms.key && ms.key.remoteJid === "status@broadcast" && conf.AUTO_READ_STATUS === "yes") {
                 await zk.readMessages([ms.key]);
