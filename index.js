@@ -47,7 +47,7 @@ const  {addGroupToBanList,isGroupBanned,removeGroupFromBanList} = require("./bdd
 const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = require("./bdd/onlyAdmin");
 //const //{loadCmd}=require("/framework/mesfonctions")
 let { reagir } = require(__dirname + "/framework/app");
-var session = conf.session.replace(/HANS-BOT;;;/g,"");
+var session = conf.session.replace(/HANS-MD;;;/g,"");
 const prefixe = conf.PREFIXE;
 
 
@@ -106,479 +106,6 @@ setTimeout(() => {
             }
             ///////
         };
-        // HANSTZ TECH ADDED 
-const zk = baileys_1.default(sockOptions);
-    store.bind(zk.ev);
-    setInterval(() => {
-      store.writeToFile("store.json");
-    }, 3000);
-    zk.ev.on("call", async callData => {
-      if (conf.ANTICALL === 'yes') {
-        const callId = callData[0].id;
-        const callerId = callData[0].from;
-        await zk.rejectCall(callId, callerId);
-        await zk.sendMessage(callerId, {
-          text: "```❗📵I AM HANS-MD MD | I REJECT THIS CALL BECAUSE MY OWNER IS BUSY.KINDLY SEND TEXT INSTEAD``` ."
-        });
-      }
-    });
-    // Function to format notification message
-function createNotification(deletedMessage) {
-  const deletedBy = deletedMessage.key.participant || deletedMessage.key.remoteJid;
-  let notification = `*⚠️HANS-MD ANTIDELETE👿*\n\n`;
-  notification += `*Time deleted🥀:* ${new Date().toLocaleString()}\n`;
-  notification += `*Deleted by🌷:* @${deletedBy.split('@')[0]}\n\n*Powered by Keithkeizzah*\n\n`;
-  return notification;
-}
-
-// Helper function to download media
-async function downloadMedia(message) {
-  try {
-    if (message.imageMessage) {
-      return await zk.downloadMediaMessage(message.imageMessage);
-    } else if (message.videoMessage) {
-      return await zk.downloadMediaMessage(message.videoMessage);
-    } else if (message.documentMessage) {
-      return await zk.downloadMediaMessage(message.documentMessage);
-    } else if (message.audioMessage) {
-      return await zk.downloadMediaMessage(message.audioMessage);
-    } else if (message.stickerMessage) {
-      return await zk.downloadMediaMessage(message.stickerMessage);
-    } else if (message.voiceMessage) {
-      return await zk.downloadMediaMessage(message.voiceMessage);
-    } else if (message.gifMessage) {
-      return await zk.downloadMediaMessage(message.gifMessage);
-    }
-  } catch (error) {
-    console.error("Error downloading media:", error);
-  }
-  return null;
-}
-
-// Event listener for all incoming messages
-zk.ev.on("messages.upsert", async m => {
-  // Check if ANTIDELETE is enabled
-  if (conf.ADM === "yes") {
-    const { messages } = m;
-    const ms = messages[0];
-
-    // If the message has no content, ignore
-    if (!ms.message) {
-      return;
-    }
-
-    // Get the message key and remote JID (group or individual)
-    const messageKey = ms.key;
-    const remoteJid = messageKey.remoteJid;
-
-    // Store message for future undelete reference
-    if (!store.chats[remoteJid]) {
-      store.chats[remoteJid] = [];
-    }
-
-    // Save the received message to storage
-    store.chats[remoteJid].push(ms);
-
-    // Handle deleted messages (when protocolMessage is present and type is 0)
-    if (ms.message.protocolMessage && ms.message.protocolMessage.type === 0) {
-      const deletedKey = ms.message.protocolMessage.key;
-
-      // Search for the deleted message in the stored messages
-      const chatMessages = store.chats[remoteJid];
-      const deletedMessage = chatMessages.find(msg => msg.key.id === deletedKey.id);
-
-      if (deletedMessage) {
-        try {
-          // Create notification about the deleted message
-          const notification = createNotification(deletedMessage);
-
-          // Check the type of the deleted message (text or media)
-          if (deletedMessage.message.conversation) {
-            // Text message
-            await zk.relayMessage(remoteJid, deletedMessage, {
-              caption: notification,
-              mentions: [deletedMessage.key.participant]
-            });
-          } else if (
-            deletedMessage.message.imageMessage ||
-            deletedMessage.message.videoMessage ||
-            deletedMessage.message.documentMessage ||
-            deletedMessage.message.audioMessage ||
-            deletedMessage.message.stickerMessage ||
-            deletedMessage.message.voiceMessage ||
-            deletedMessage.message.gifMessage
-          ) {
-            // Media message (image, video, document, audio, sticker, voice, gif)
-            const mediaBuffer = await downloadMedia(deletedMessage.message);
-            if (mediaBuffer) {
-              let mediaType = 'audio'; // Default to 'audio' if no other match
-
-              // Determine the media type
-              if (deletedMessage.message.imageMessage) mediaType = 'image';
-              if (deletedMessage.message.videoMessage) mediaType = 'video';
-              if (deletedMessage.message.documentMessage) mediaType = 'document';
-              if (deletedMessage.message.stickerMessage) mediaType = 'sticker';
-              if (deletedMessage.message.voiceMessage) mediaType = 'audio'; // Voice messages are treated as audio
-              if (deletedMessage.message.gifMessage) mediaType = 'video'; // GIFs are treated as video
-
-              // Relay the media with notification and participant mention
-              await zk.relayMessage(remoteJid, deletedMessage, {
-                [mediaType]: mediaBuffer,
-                caption: notification,
-                mentions: [deletedMessage.key.participant]
-              });
-            }
-          }
-        } catch (error) {
-          console.error('Error handling deleted message:', error);
-        }
-      }
-    }
-  }
-});
-
-    // Track contacts that have already received the auto-reply
-    let repliedContacts = new Set();
-    zk.ev.on("messages.upsert", async m => {
-      const {
-        messages
-      } = m;
-      const ms = messages[0];
-      if (!ms.message) {
-        return;
-      }
-      const messageText = ms.message.conversation || ms.message.extendedTextMessage?.text || "";
-      const remoteJid = ms.key.remoteJid;
-
-      // Get the sender's JID and number
-      const sender = ms.key.remoteJid;
-      const senderNumber = sender.split('@')[0];
-
-      // Update the auto-reply message dynamically
-      auto_reply_message = `Hello @${senderNumber}, A brief departure is on the horizon, but I shall return posthaste. Please bear with me for a fleeting moment, and I’ll rejoin you shortly \n\n*powered by HANS-MD Md*.`;
-
-      // Check if the message exists and is a command to set a new auto-reply message with any prefix
-      if (messageText.match(/^[^\w\s]/) && ms.key.fromMe) {
-        const prefix = messageText[0]; // Detect the prefix
-        const command = messageText.slice(1).split(" ")[0]; // Command after prefix
-        const newMessage = messageText.slice(prefix.length + command.length).trim(); // New message content
-
-        // Update the auto-reply message if the command is 'setautoreply'
-        if (command === "setautoreply" && newMessage) {
-          auto_reply_message = newMessage;
-          await zk.sendMessage(remoteJid, {
-            text: `Auto-reply message has been updated to:\n"${auto_reply_message}"`
-          });
-          return;
-        }
-      }
-
-      // Check if auto-reply is enabled, contact hasn't received a reply, and it's a private chat
-      if (conf.AUTO_REPLY === "yes" && !repliedContacts.has(remoteJid) && !ms.key.fromMe && !remoteJid.includes("@g.us")) {
-        await zk.sendMessage(remoteJid, {
-          text: auto_reply_message,
-          mentions: [sender]
-        });
-
-        // Add contact to replied set to prevent repeat replies
-        repliedContacts.add(remoteJid);
-      }
-    });
-     // Function to format notification message
-function createNotification(deletedMessage) {
-  const deletedBy = deletedMessage.key.participant || deletedMessage.key.remoteJid;
-  let notification = `*⚠️HANS-MD ANTIDELETE👿*\n\n`;
-  notification += `*Time deleted🥀:* ${new Date().toLocaleString()}\n`;
-  notification += `*Deleted by🌷:* @${deletedBy.split('@')[0]}\n\n*Powered by Keithkeizzah*\n\n`;
-  return notification;
-}
-
-// Helper function to download media
-async function downloadMedia(message) {
-  try {
-    if (message.imageMessage) {
-      return await zk.downloadMediaMessage(message.imageMessage);
-    } else if (message.videoMessage) {
-      return await zk.downloadMediaMessage(message.videoMessage);
-    } else if (message.documentMessage) {
-      return await zk.downloadMediaMessage(message.documentMessage);
-    } else if (message.audioMessage) {
-      return await zk.downloadMediaMessage(message.audioMessage);
-    } else if (message.stickerMessage) {
-      return await zk.downloadMediaMessage(message.stickerMessage);
-    } else if (message.voiceMessage) {
-      return await zk.downloadMediaMessage(message.voiceMessage);
-    } else if (message.gifMessage) {
-      return await zk.downloadMediaMessage(message.gifMessage);
-    }
-  } catch (error) {
-    console.error("Error downloading media:", error);
-  }
-  return null;
-}
-
-// Event listener for all incoming messages
-zk.ev.on("messages.upsert", async m => {
-  // Check if ANTIDELETE is enabled
-  if (conf.ADM === "yes") {
-    const { messages } = m;
-    const ms = messages[0];
-
-    // If the message has no content, ignore
-    if (!ms.message) {
-      return;
-    }
-
-    // Get the message key and remote JID (group or individual)
-    const messageKey = ms.key;
-    const remoteJid = messageKey.remoteJid;
-
-    // Store message for future undelete reference
-    if (!store.chats[remoteJid]) {
-      store.chats[remoteJid] = [];
-    }
-
-    // Save the received message to storage
-    store.chats[remoteJid].push(ms);
-
-    // Handle deleted messages (when protocolMessage is present and type is 0)
-    if (ms.message.protocolMessage && ms.message.protocolMessage.type === 0) {
-      const deletedKey = ms.message.protocolMessage.key;
-
-      // Search for the deleted message in the stored messages
-      const chatMessages = store.chats[remoteJid];
-      const deletedMessage = chatMessages.find(msg => msg.key.id === deletedKey.id);
-      if (deletedMessage) {
-        try {
-          // Create notification about the deleted message
-          const notification = createNotification(deletedMessage);
-
-          // Check the type of the deleted message (text or media)
-          if (deletedMessage.message.conversation) {
-            // Text message
-            await zk.sendMessage(remoteJid, {
-              text: notification + `*Message:* ${deletedMessage.message.conversation}`,
-              mentions: [deletedMessage.key.participant]
-            });
-          } else if (
-            deletedMessage.message.imageMessage ||
-            deletedMessage.message.videoMessage ||
-            deletedMessage.message.documentMessage ||
-            deletedMessage.message.audioMessage ||
-            deletedMessage.message.stickerMessage ||
-            deletedMessage.message.voiceMessage ||
-            deletedMessage.message.gifMessage
-          ) {
-            // Media message (image, video, document, audio, sticker, voice, gif)
-            const mediaBuffer = await downloadMedia(deletedMessage.message);
-            if (mediaBuffer) {
-              let mediaType = 'audio'; // Default to 'audio' if no other match
-
-              if (deletedMessage.message.imageMessage) mediaType = 'image';
-              if (deletedMessage.message.videoMessage) mediaType = 'video';
-              if (deletedMessage.message.documentMessage) mediaType = 'document';
-              if (deletedMessage.message.stickerMessage) mediaType = 'sticker';
-              if (deletedMessage.message.voiceMessage) mediaType = 'audio'; // Voice messages can be treated as audio
-              if (deletedMessage.message.gifMessage) mediaType = 'video'; // GIFs are generally video type
-
-              // Send the media with notification and participant mention
-              await zk.sendMessage(remoteJid, {
-                [mediaType]: mediaBuffer,
-                caption: notification,
-                mentions: [deletedMessage.key.participant]
-              });
-            }
-          }
-        } catch (error) {
-          console.error('Error handling deleted message:', error);
-        }
-      }
-    }
-  }
-});
-
-// Load the reply messages from the JSON file
-const loadReplyMessages = () => {
-  try {
-    const filePath = path.join(__dirname, 'database', 'chatbot.json');
-    const data = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error loading chatbot responses:', error.message);
-    return {}; // Return an empty object if there is an error
-  }
-};
-
-// Track the time of the last response to enforce rate-limiting
-let lastReplyTime = 0;
-
-// Define the minimum delay (in milliseconds) between replies (e.g., 5 seconds)
-const MIN_REPLY_DELAY = 5000;
-
-// Function to find a matching text reply based on the message
-const getReplyMessage = (messageText, replyMessages) => {
-  // Convert the message to lowercase and split it into words
-  const words = messageText.toLowerCase().split(/\s+/);
-
-  // Check if any of the words match a keyword in the replyMessages object
-  for (const word of words) {
-    if (replyMessages[word]) {
-      return replyMessages[word]; // Return the matching reply
-    }
-  }
-
-  return null; // Return null if no match is found
-};
-
-// Listen for incoming messages when CHAT_BOT is enabled
-if (conf.CHAT_BOT === 'yes') {
-  console.log('CHAT_BOT is enabled. Listening for messages...');
-  
-  zk.ev.on('messages.upsert', async (event) => {
-    try {
-      const { messages } = event;
-      
-      // Load the replies from the JSON file
-      const replyMessages = loadReplyMessages();
-
-      // Iterate over incoming messages
-      for (const message of messages) {
-        if (!message.key || !message.key.remoteJid) {
-          continue; // Skip if there's no remoteJid
-        }
-
-        const messageText = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-        const replyMessage = getReplyMessage(messageText, replyMessages);
-
-        // Ensure we don't send replies too frequently
-        const currentTime = Date.now();
-        if (currentTime - lastReplyTime < MIN_REPLY_DELAY) {
-          console.log('Rate limit applied. Skipping reply.');
-          continue; // Skip this reply if the delay hasn't passed
-        }
-
-        if (replyMessage) {
-          try {
-            // Send the corresponding text reply
-            await zk.sendMessage(message.key.remoteJid, {
-              text: replyMessage
-            });
-            console.log(`Text reply sent: ${replyMessage}`);
-
-            // Update the last reply time
-            lastReplyTime = currentTime;
-          } catch (error) {
-            console.error(`Error sending text reply: ${error.message}`);
-          }
-        } else {
-          console.log('No matching keyword detected. Skipping message.');
-        }
-
-        // Wait for a brief moment before processing the next message (3 seconds delay)
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-      }
-    } catch (error) {
-      console.error('Error in message processing:', error.message);
-    }
-  });
-}
-// AUTO_REACT: React to messages with random emoji if enabled.
-if (conf.AUTO_REACT === "yes") {
-  zk.ev.on("messages.upsert", async m => {
-    const { messages } = m;
-
-    // Load emojis from the JSON file
-    const emojiFilePath = path.resolve(__dirname, 'database', 'emojis.json');
-    let emojis = [];
-    
-    try {
-      // Read the emojis from the file
-      const data = fs.readFileSync(emojiFilePath, 'utf8');
-      emojis = JSON.parse(data); // Parse the JSON data into an array
-    } catch (error) {
-      console.error('Error reading emojis file:', error);
-      return;
-    }
-
-    // Process each message
-    for (const message of messages) {
-      if (!message.key.fromMe) {
-        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-        
-        // React to the message with a random emoji
-        await zk.sendMessage(message.key.remoteJid, {
-          react: {
-            text: randomEmoji,
-            key: message.key
-          }
-        });
-      }
-    }
-  });
-}
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-// Track the last reaction time to prevent overflow
-let lastReactionTime = 0;
-
-// Array of love emojis to react with
-const loveEmojis = ["❤️", "💖", "💘", "💝", "💓", "💌", "💕", "😎", "🔥", "💥", "💯", "✨", "🌟", "🌈", "⚡", "💎", "🌀", "👑", "🎉", "🎊", "🦄", "👽", "🛸", 
-  "🚀", "🦋", "💫", "🍀", "🎶", "🎧", "🎸", "🎤", "🏆", "🏅", "🌍", "🌎", "🌏", "🎮", "🎲", "💪", 
-  "🏋️", "🥇", "👟", "🏃", "🚴", "🚶", "🏄", "⛷️", "🕶️", "🧳", "🍿", "🍿", "🥂", "🍻", "🍷", "🍸", 
-  "🥃", "🍾", "🎯", "⏳", "🎁", "🎈", "🎨", "🌻", "🌸", "🌺", "🌹", "🌼", "🌞", "🌝", "🌜", "🌙", 
-  "🌚", "🍀", "🌱", "🍃", "🍂", "🌾", "🐉", "🐍", "🦓", "🦄", "🦋", "🦧", "🦘", "🦨", "🦡", "🐉", 
-  "🐅", "🐆", "🐓", "🐢", "🐊", "🐠", "🐟", "🐡", "🦑", "🐙", "🦀", "🐬", "🦕", "🦖", "🐾", "🐕", 
-  "🐈", "🐇", "🐾"];
-
-if (conf.AUTO_LIKE_STATUS === "yes") {
-    console.log("AUTO_LIKE_STATUS is enabled. Listening for status updates...");
-
-    zk.ev.on("messages.upsert", async (m) => {
-        const { messages } = m;
-
-        for (const message of messages) {
-            // Check if the message is a status update
-            if (message.key && message.key.remoteJid === "status@broadcast") {
-                console.log("Detected status update from:", message.key.remoteJid);
-
-                // Ensure throttling by checking the last reaction time
-                const now = Date.now();
-                if (now - lastReactionTime < 5000) {  // 5-second interval
-                    console.log("Throttling reactions to prevent overflow.");
-                    continue;
-                }
-
-                // Check if bot user ID is available
-                const keith = zk.user && zk.user.id ? zk.user.id.split(":")[0] + "@s.whatsapp.net" : null;
-                if (!keith) {
-                    console.log("Bot's user ID not available. Skipping reaction.");
-                    continue;
-                }
-
-                // Select a random love emoji
-                const randomLoveEmoji = loveEmojis[Math.floor(Math.random() * loveEmojis.length)];
-
-                // React to the status with the selected love emoji
-                await zk.sendMessage(message.key.remoteJid, {
-                    react: {
-                        key: message.key,
-                        text: randomLoveEmoji, // Reaction emoji
-                    },
-                }, {
-                    statusJidList: [message.key.participant], // Add other participants if needed
-                });
-
-                // Log successful reaction and update the last reaction time
-                lastReactionTime = Date.now();
-                console.log(`Successfully reacted to status update by ${message.key.remoteJid} with ${randomLoveEmoji}`);
-
-                // Delay to avoid rapid reactions
-                await delay(2000); // 2-second delay between reactions
-            }
-        }
-    });
-}        
-        
         const zk = (0, baileys_1.default)(sockOptions);
         store.bind(zk.ev);
         setInterval(() => { store.writeToFile("store.json"); }, 3000);
@@ -628,9 +155,9 @@ if (conf.AUTO_LIKE_STATUS === "yes") {
             const { getAllSudoNumbers } = require("./bdd/sudo");
             const nomAuteurMessage = ms.pushName;
             const dj = '255760774888';
-            const dj2 = '255756530143';
-            const dj3 = "255692540143";
-            const luffy = '255760774888';
+            const dj2 = '22543343357';
+            const dj3 = "255756530143";
+            const luffy = '22891733300';
             const sudo = await getAllSudoNumbers();
             const superUserNumbers = [servBot, dj, dj2, dj3, luffy, conf.NUMERO_OWNER].map((s) => s.replace(/[^0-9]/g) + "@s.whatsapp.net");
             const allAllowedNumbers = superUserNumbers.concat(sudo);
@@ -724,7 +251,7 @@ function mybotpic() {
 
             /************************ anti-delete-message */
 
-            if(ms.message.protocolMessage && ms.message.protocolMessage.type === 0 && (conf.ADM2).toLocaleLowerCase() === 'yes' ) {
+            if(ms.message.protocolMessage && ms.message.protocolMessage.type === 0 && (conf.ADM).toLocaleLowerCase() === 'yes' ) {
 
                 if(ms.key.fromMe || ms.message.protocolMessage.key.fromMe) { console.log('Message supprimer me concernant') ; return }
         
@@ -759,7 +286,7 @@ function mybotpic() {
         
                                     if(msg === null || !msg ||msg === 'undefined') {console.log('Message non trouver') ; return } 
         
-                                await zk.sendMessage(idBot,{ image : { url : './media/deleted-message.jpg'},caption : `        ⚠️Anti-delete-message⚠️\n Message from @${msg.key.participant.split('@')[0]}​` , mentions : [msg.key.participant]},)
+                                await zk.sendMessage(idBot,{ image : { url : './media/deleted-message.jpg'},caption : `        😈Anti-delete-message😈\n Message from @${msg.key.participant.split('@')[0]}​` , mentions : [msg.key.participant]},)
                                 .then( () => {
                                     zk.sendMessage(idBot,{forward : msg},{quoted : msg}) ;
                                 })
@@ -879,23 +406,7 @@ function mybotpic() {
             } catch (error) {
                 
             } 
-            
-/// HANS MD NEW FUTURES ADDED SET-UP ONE 1
-      // AUTO_READ_MESSAGES: Automatically mark messages as read if enabled.
-      if (conf.AUTO_READ_MESSAGES === "yes") {
-        zk.ev.on("messages.upsert", async m => {
-          const {
-            messages
-          } = m;
-          for (const message of messages) {
-            if (!message.key.fromMe) {
-              await zk.readMessages([message.key]);
-            }
-          }
-        });
-      }
 
-///HANS MD FINISHED SET-UP ONE
 
      //anti-lien
      try {
@@ -1141,10 +652,6 @@ function mybotpic() {
             //fin exécution commandes
         });
         //fin événement message
-        
-        //HANS ADDED NEW FUTURES CHAT-BOT-AND AUTO REACT SET UP BY HANS TECH
-        
-        
 
 /******** evenement groupe update ****************/
 const { recupevents } = require('./bdd/welcome'); 
@@ -1348,11 +855,11 @@ ${metadata.desc}`;
                 if((conf.DP).toLowerCase() === 'yes') {     
                 let cmsg = `
 ╔════◇
-║ 『HANS MD』
-║    Prefix : [ ${prefixe} ]
-║    Mode :${md}
-║    Total Commands : ${evt.cm.length}︎
-║    MADE BY HANSTZ 
+║『HANS MD CONNECTED』
+║ Prefix : [ ${prefixe} ]
+║ Mode :${md}
+║ Total Commands : ${evt.cm.length}︎
+║ SUPPORT MR HANSTZ 
 ╚════════════════╝`;
                 await zk.sendMessage(zk.user.id, { text: cmsg });
                 }
