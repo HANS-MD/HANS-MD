@@ -46,12 +46,7 @@
       "description": "Restrict other users from using your bot in private messages (type 'yes' to activate or 'no' to deactivate; don't write in capital letters)",
       "value": "yes",
       "required": false
-    },
-    "ANTI_VV": {
-      "description": "Detect view-once messages",
-      "value": "no",
-      "required": false
-    },
+    },
     "BOT_NAME": {
       "description": "Give a name for your bot",
       "value": "ALPHA-MD",
